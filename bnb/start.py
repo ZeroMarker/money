@@ -9,7 +9,7 @@ client = Client(api_key, api_secret, testnet=True)
 
 symbol = 'BTCUSDT'
 
-buy_price_threshold = 103000
+buy_price_threshold = 10300
 
 sell_price_threshold = 105500
 
