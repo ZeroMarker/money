@@ -1,9 +1,10 @@
 #!/bin/bash
-# Binance Price CLI Installer
+# Binance Price CLI Installer - Updated for Externally Managed Environments
 # Usage: ./install.sh
 
 # Configuration
 SCRIPT_NAME="binance_price_cli.py"
+VENV_DIR="/opt/binance_cli_venv"
 INSTALL_DIR="/usr/local/bin"
 BIN_NAMES=("binance" "bn")  # Supported command names
 
@@ -16,9 +17,22 @@ fi
 # Check for Python
 if ! command -v python3 &> /dev/null; then
     echo "Python 3 is required but not installed."
-    echo "Install Python with: sudo apt install python3"
+    echo "Install Python with: sudo apt install python3 python3-venv"
     exit 1
 fi
+
+# Create virtual environment
+echo "Creating Python virtual environment in $VENV_DIR..."
+python3 -m venv "$VENV_DIR"
+source "$VENV_DIR/bin/activate"
+
+# Install Python dependencies
+echo "Installing required Python packages in virtual environment..."
+pip install python-binance || {
+    echo "Failed to install python-binance."
+    exit 1
+}
+deactivate
 
 # Create script content
 cat > /tmp/$SCRIPT_NAME << 'EOL'
@@ -60,16 +74,20 @@ if __name__ == "__main__":
     main()
 EOL
 
-# Install Python dependencies
-echo "Installing required Python packages..."
-pip3 install python-binance || {
-    echo "Failed to install python-binance. Try: pip3 install python-binance"
-    exit 1
-}
-
-# Deploy script
+# Deploy script with virtual environment wrapper
 echo "Installing script to $INSTALL_DIR..."
-install -m 755 /tmp/$SCRIPT_NAME $INSTALL_DIR/$SCRIPT_NAME
+cat > $INSTALL_DIR/$SCRIPT_NAME << 'EOL'
+#!/bin/bash
+# Wrapper script for Python virtual environment
+source /opt/binance_cli_venv/bin/activate
+exec /opt/binance_cli_venv/bin/python /opt/binance_cli_venv/bin/binance_price_cli.py "$@"
+EOL
+
+# Install the actual Python script
+install -m 755 /tmp/$SCRIPT_NAME $VENV_DIR/bin/$SCRIPT_NAME
+
+# Make wrapper executable
+chmod 755 $INSTALL_DIR/$SCRIPT_NAME
 
 # Create symlinks
 for bin_name in "${BIN_NAMES[@]}"; do
