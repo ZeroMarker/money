@@ -1,5 +1,5 @@
 #!/bin/bash
-# Binance Price CLI Installer - Updated for Externally Managed Environments
+# Binance Price CLI Installer - Optimized for Ubuntu
 # Usage: ./install.sh
 
 # Configuration
@@ -14,28 +14,41 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-# Check for Python
+# Check for Python and venv module
 if ! command -v python3 &> /dev/null; then
     echo "Python 3 is required but not installed."
-    echo "Install Python with: sudo apt install python3 python3-venv"
-    exit 1
+    echo "Installing Python and venv module..."
+    apt update && apt install -y python3 python3-venv
 fi
 
-# Create virtual environment
+# Ensure venv module is available
+if ! python3 -c "import venv" &> /dev/null; then
+    echo "Python venv module not available."
+    echo "Installing python3-venv..."
+    apt install -y python3-venv
+fi
+
+# Remove any previous installation
+rm -rf "$VENV_DIR"
+for bin_name in "${BIN_NAMES[@]}"; do
+    rm -f "$INSTALL_DIR/$bin_name"
+done
+
+# Create virtual environment with explicit Python version
 echo "Creating Python virtual environment in $VENV_DIR..."
-python3 -m venv "$VENV_DIR"
-source "$VENV_DIR/bin/activate"
+python3 -m venv --system-site-packages "$VENV_DIR"
 
 # Install Python dependencies
 echo "Installing required Python packages in virtual environment..."
-pip install python-binance || {
+"$VENV_DIR/bin/pip" install --upgrade pip wheel
+"$VENV_DIR/bin/pip" install python-binance || {
     echo "Failed to install python-binance."
     exit 1
 }
-deactivate
 
-# Create script content
-cat > /tmp/$SCRIPT_NAME << 'EOL'
+# Create the Python script
+VENV_SCRIPT_PATH="$VENV_DIR/bin/$SCRIPT_NAME"
+cat > "$VENV_SCRIPT_PATH" << 'EOL'
 #!/usr/bin/env python3
 import sys
 import os
@@ -45,11 +58,11 @@ def get_current_price(symbol):
     # Read API keys from environment variables
     api_key = os.getenv('BINANCE_API_KEY')
     api_secret = os.getenv('BINANCE_API_SECRET')
-
+    
     if not api_key or not api_secret:
         print("Error: API keys not found. Set BINANCE_API_KEY and BINANCE_API_SECRET environment variables.")
         sys.exit(1)
-
+    
     # Use testnet by default (safe for testing)
     client = Client(api_key, api_secret, testnet=True)
     ticker = client.get_symbol_ticker(symbol=symbol)
@@ -60,9 +73,9 @@ def main():
         print(f"Usage: {sys.argv[0]} price <SYMBOL>")
         print(f"Example: {sys.argv[0]} price BTCUSDT")
         sys.exit(1)
-
+    
     symbol = sys.argv[2].upper()
-
+    
     try:
         price = get_current_price(symbol)
         print(f"{symbol}: {price}")
@@ -74,29 +87,18 @@ if __name__ == "__main__":
     main()
 EOL
 
-# Deploy script with virtual environment wrapper
-echo "Installing script to $INSTALL_DIR..."
-cat > $INSTALL_DIR/$SCRIPT_NAME << 'EOL'
-#!/bin/bash
-# Wrapper script for Python virtual environment
-source /opt/binance_cli_venv/bin/activate
-exec /opt/binance_cli_venv/bin/python /opt/binance_cli_venv/bin/binance_price_cli.py "$@"
-EOL
+# Make the script executable
+chmod 755 "$VENV_SCRIPT_PATH"
 
-# Install the actual Python script
-install -m 755 /tmp/$SCRIPT_NAME $VENV_DIR/bin/$SCRIPT_NAME
-
-# Make wrapper executable
-chmod 755 $INSTALL_DIR/$SCRIPT_NAME
-
-# Create symlinks
+# Create direct Python wrappers (no bash wrapper needed)
 for bin_name in "${BIN_NAMES[@]}"; do
-    ln -sf $INSTALL_DIR/$SCRIPT_NAME $INSTALL_DIR/$bin_name
+    cat > "$INSTALL_DIR/$bin_name" << EOL
+#!/usr/bin/env bash
+"$VENV_DIR/bin/python" "$VENV_SCRIPT_PATH" "\$@"
+EOL
+    chmod 755 "$INSTALL_DIR/$bin_name"
     echo "Created command: $bin_name"
 done
-
-# Cleanup
-rm /tmp/$SCRIPT_NAME
 
 # Final instructions
 echo -e "\nSuccessfully installed Binance Price CLI!"
