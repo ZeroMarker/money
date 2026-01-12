@@ -25,25 +25,41 @@ if 'trades' not in st.session_state:
 
 # ---------------- 侧边栏：API 配置 ----------------
 st.sidebar.title("Binance API 配置")
-api_key = st.sidebar.text_input("API Key")
-api_secret = st.sidebar.text_input("API Secret")
+api_key = st.sidebar.text_input("API Key", type="password")
+api_secret = st.sidebar.text_input("API Secret", type="password")
 testnet = st.sidebar.checkbox("使用测试网 (Testnet)", value=True)
 
-API_KEY = '5U9dM3mSY068k3LgFfpO8tmh3YbTIbeJRQXo5Uxd0KCDSxgFeKGphcnBGHUYlWBL'
-API_SECRET = 'DUwb9nX8lHMd1SWWIThTzCfJ5Bwz5wImviaAKWe1ZmmVpJhykDp9XFUxYl1AwU6E'
-st.session_state.exchange = ccxt.binance({
-    'apiKey': API_KEY,
-    'secret': API_SECRET,
-    'enableRateLimit': True,
-    'options': {'defaultType': 'spot'}
-})
+api_key = '5U9dM3mSY068k3LgFfpO8tmh3YbTIbeJRQXo5Uxd0KCDSxgFeKGphcnBGHUYlWBL'
+api_secret = 'DUwb9nX8lHMd1SWWIThTzCfJ5Bwz5wImviaAKWe1ZmmVpJhykDp9XFUxYl1AwU6E'
 
 if st.sidebar.button("连接 Binance"):
     try:
+        exchange_config = {
+            'apiKey': api_key,
+            'secret': api_secret,
+            'enableRateLimit': True,
+            'options': {'defaultType': 'spot'}
+        }
+        # if testnet:
+        #     exchange_config['urls'] = {
+        #         'api': {
+        #             'public': 'https://demo-api.binance.com/api',
+        #             'private': 'https://demo-api.binance.com/api',
+        #         }
+        #     }
+        #     st.sidebar.info("使用 Binance Spot Demo (新 Testnet 端点)")
+        # else:
+        #     st.sidebar.info("使用真实 Binance 现货")
+
+        st.session_state.exchange = ccxt.binance(exchange_config)
+        st.session_state.exchange.set_sandbox_mode(True)
         balance = st.session_state.exchange.fetch_balance()
-        st.sidebar.success("连接成功！USDT余额: " + str(balance.get('USDT', {}).get('free', 0)))
+        usdt_free = balance.get('USDT', {}).get('free', 0)
+        st.sidebar.success(f"连接成功！USDT 可用余额: {usdt_free:.2f}")
     except Exception as e:
-        st.sidebar.error(f"连接失败: {e}")
+        st.sidebar.error(f"连接失败: {str(e)}")
+        if 'Invalid Api-Key' in str(e):
+            st.sidebar.warning("建议：去 https://demo-api.binance.com 生成新的 Testnet Key（旧 testnet.vision 的 Key 可能失效）")
 
 # ---------------- 主界面 Tabs ----------------
 tab1, tab2, tab3 = st.tabs(["1. 账户信息", "2. 交易策略", "3. 系统管理"])
@@ -56,20 +72,28 @@ with tab1:
             balance = st.session_state.exchange.fetch_balance()
             assets = []
             for asset, info in balance.items():
-                if isinstance(info, dict) and info.get('free', 0) > 0:
+                if isinstance(info, dict) and float(info.get('free', 0)) > 0:  # 强制转换为 float
                     assets.append({
                         '资产': asset,
-                        '可用': info.get('free', 0),
-                        '锁定': info.get('used', 0),
-                        '总计': info.get('total', 0)
+                        '可用': float(info.get('free', 0)),
+                        '锁定': float(info.get('used', 0)),
+                        '总计': float(info.get('total', 0))
                     })
             df_assets = pd.DataFrame(assets)
             st.subheader("资产概览")
-            st.dataframe(df_assets.style.format("{:.4f}"))
+            if not df_assets.empty:
+                st.dataframe(
+                    df_assets.style.format(
+                        "{:.4f}",
+                        subset=['可用', '锁定', '总计']
+                    )
+                )
+            else:
+                st.info("无可用资产")
 
             # 最近订单/交易
             orders = st.session_state.exchange.fetch_my_trades(limit=20)
-            if orders:
+            if orders is not None:
                 df_trades = pd.DataFrame(orders)
                 df_trades = df_trades[['datetime', 'symbol', 'side', 'price', 'amount', 'cost', 'fee']]
                 df_trades['profit'] = df_trades.apply(lambda row: (row['price'] * row['amount'] if row['side'] == 'sell' else -row['cost']) - row['fee']['cost'] if row['fee'] else 0, axis=1)

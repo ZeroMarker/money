@@ -9,8 +9,8 @@ import os
 # from alerts import universal_alert
 
 # --- 基础配置 ---
-API_KEY = '你的API_KEY'
-API_SECRET = '你的API_SECRET'
+API_KEY = '5U9dM3mSY068k3LgFfpO8tmh3YbTIbeJRQXo5Uxd0KCDSxgFeKGphcnBGHUYlWBL'
+API_SECRET = 'DUwb9nX8lHMd1SWWIThTzCfJ5Bwz5wImviaAKWe1ZmmVpJhykDp9XFUxYl1AwU6E'
 
 SYMBOL = 'BTC/USDT'
 BUY_AMOUNT_USDT = 50
