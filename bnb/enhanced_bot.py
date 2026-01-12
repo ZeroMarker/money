@@ -1,3 +1,5 @@
+from random import choice
+
 import ccxt
 import time
 import pandas as pd
@@ -45,8 +47,10 @@ def main():
     print("5. 高级RSI策略 (RSI+MA组合)")
     print("6. 运行所有策略")
     
-    choice = input("\n请输入选择 (1-6): ").strip()
-    
+    # choice = input("\n请输入选择 (1-6): ").strip()
+
+    choice = '2'
+
     if choice == '1':
         # 运行原版RSI策略
         strategy = manager.strategies['rsi']
