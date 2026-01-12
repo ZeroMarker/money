@@ -29,17 +29,17 @@ api_key = st.sidebar.text_input("API Key")
 api_secret = st.sidebar.text_input("API Secret")
 testnet = st.sidebar.checkbox("使用测试网 (Testnet)", value=True)
 
+API_KEY = '5U9dM3mSY068k3LgFfpO8tmh3YbTIbeJRQXo5Uxd0KCDSxgFeKGphcnBGHUYlWBL'
+API_SECRET = 'DUwb9nX8lHMd1SWWIThTzCfJ5Bwz5wImviaAKWe1ZmmVpJhykDp9XFUxYl1AwU6E'
+st.session_state.exchange = ccxt.binance({
+    'apiKey': API_KEY,
+    'secret': API_SECRET,
+    'enableRateLimit': True,
+    'options': {'defaultType': 'spot'}
+})
+
 if st.sidebar.button("连接 Binance"):
     try:
-        exchange_config = {
-            'apiKey': api_key,
-            'secret': api_secret,
-            'enableRateLimit': True,
-            'options': {'defaultType': 'spot'}
-        }
-        # if testnet:
-        #     exchange_config['urls'] = {'api': {'public': 'https://testnet.binance.vision/api', 'private': 'https://testnet.binance.vision/api'}}
-        st.session_state.exchange = ccxt.binance(exchange_config)
         balance = st.session_state.exchange.fetch_balance()
         st.sidebar.success("连接成功！USDT余额: " + str(balance.get('USDT', {}).get('free', 0)))
     except Exception as e:
