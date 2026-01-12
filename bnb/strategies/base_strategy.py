@@ -63,80 +63,108 @@ class BaseStrategy(ABC):
         """执行买入操作"""
         current_price = self.fetch_current_price()
         self.amount = self.calculate_amount(current_price)
-        
-        # 实际下单（注释掉以避免真实交易）
-        # order = self.exchange.create_market_buy_order(self.symbol, self.amount)
-        
-        self.buy_price = current_price
-        self.buy_time = datetime.now()
-        self.in_position = True
-        
-        return {
-            'action': 'BUY',
-            'price': current_price,
-            'amount': self.amount,
-            'timestamp': self.buy_time
-        }
+
+        try:
+            # 实际下单
+            order = self.exchange.create_market_buy_order(self.symbol, self.amount)
+
+            # 检查订单是否成功执行
+            if order and 'status' in order and order['status'] in ['closed', 'filled']:
+                self.buy_price = order['average'] if order['average'] else current_price
+                self.buy_time = datetime.now()
+                self.in_position = True
+                self.amount = order['filled']  # 更新为实际成交数量
+
+                return {
+                    'action': 'BUY',
+                    'price': self.buy_price,
+                    'amount': self.amount,
+                    'order_id': order['id'],
+                    'timestamp': self.buy_time
+                }
+            else:
+                print(f"❌ 买单未完全成交或失败: {order}")
+                return None
+        except Exception as e:
+            print(f"❌ 买入订单执行失败: {e}")
+            return None
     
     def execute_sell(self):
         """执行卖出操作"""
         current_price = self.fetch_current_price()
-        
-        # 实际下单（注释掉以避免真实交易）
-        # order = self.exchange.create_market_sell_order(self.symbol, self.amount)
-        
-        profit = ((current_price - self.buy_price) / self.buy_price) * 100
-        holding_time = datetime.now() - self.buy_time if self.buy_time else None
-        
-        self.in_position = False
-        self.buy_price = 0
-        self.buy_time = None
-        self.amount = 0
-        
-        return {
-            'action': 'SELL',
-            'price': current_price,
-            'profit': profit,
-            'holding_time': holding_time
-        }
+
+        try:
+            # 实际下单
+            order = self.exchange.create_market_sell_order(self.symbol, self.amount)
+
+            # 检查订单是否成功执行
+            if order and 'status' in order and order['status'] in ['closed', 'filled']:
+                sell_price = order['average'] if order['average'] else current_price
+                profit = ((sell_price - self.buy_price) / self.buy_price) * 100
+                holding_time = datetime.now() - self.buy_time if self.buy_time else None
+
+                self.in_position = False
+                self.buy_price = 0
+                self.buy_time = None
+                self.amount = 0
+
+                return {
+                    'action': 'SELL',
+                    'price': sell_price,
+                    'profit': profit,
+                    'order_id': order['id'],
+                    'holding_time': holding_time
+                }
+            else:
+                print(f"❌ 卖单未完全成交或失败: {order}")
+                return None
+        except Exception as e:
+            print(f"❌ 卖出订单执行失败: {e}")
+            return None
     
     def run(self, sleep_time=15):
         """运行策略主循环"""
         print(f"开始运行 {self.__class__.__name__} 策略... 交易对: {self.symbol}")
-        
+
         while True:
             try:
                 # 获取市场数据
                 ohlcv = self.fetch_ohlcv()
                 df = pd.DataFrame(ohlcv, columns=['ts', 'o', 'h', 'l', 'c', 'v'])
-                
+
                 current_price = self.fetch_current_price()
-                
+
                 if not self.in_position:
                     # 检查买入信号
                     if self.should_buy(df):
                         result = self.execute_buy()
-                        print(f"\n📈 {result['action']}信号触发！价格: {result['price']:.2f}")
-                        print(f"✅ 已买入 | 均价: {result['price']:.2f} | 数量: {result['amount']:.6f}")
-                    
+                        if result:
+                            print(f"\n📈 {result['action']}信号触发！价格: {result['price']:.2f}")
+                            print(f"✅ 已买入 | 均价: {result['price']:.2f} | 数量: {result['amount']:.6f} | 订单ID: {result['order_id']}")
+                        else:
+                            print(f"\n❌ 买入失败，请检查账户余额或网络连接")
+
                     # 显示当前状态
                     else:
                         self.display_status('scanning', current_price)
-                        
+
                 else:
                     # 检查卖出信号
                     if self.should_sell(df):
                         result = self.execute_sell()
-                        print(f"\n📉 {result['action']}信号触发！价格: {result['price']:.2f}")
-                        print(f"✅ 已卖出 | 价格: {result['price']:.2f} | 收益: {result['profit']:.2f}%")
-                        print("-" * 50)
-                    
+                        if result:
+                            print(f"\n📉 {result['action']}信号触发！价格: {result['price']:.2f}")
+                            print(f"✅ 已卖出 | 价格: {result['price']:.2f} | 收益: {result['profit']:.2f}% | 订单ID: {result['order_id']}")
+                            print("-" * 50)
+                        else:
+                            print(f"\n❌ 卖出失败，请检查持仓或网络连接")
+
                     # 显示持仓状态
                     else:
                         self.display_status('holding', current_price)
-                
+
                 time.sleep(sleep_time)
-                
+
             except Exception as e:
                 print(f"\n❌ 发生错误: {e}")
                 time.sleep(10)
