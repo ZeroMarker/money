@@ -1,3 +1,5 @@
+sudo cp bnb-bot.service /etc/systemd/system/bnb-bot.service
+
 sudo nano /etc/systemd/system/bnb-bot.service
 
 sudo systemctl daemon-reload

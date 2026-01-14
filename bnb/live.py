@@ -7,17 +7,6 @@ import yaml
 
 config = yaml.safe_load(sys.stdin)
 
-# ====================================================
-# 配置区域
-# ====================================================
-# api_key = '5U9dM3mSY068k3LgFfpO8tmh3YbTIbeJRQXo5Uxd0KCDSxgFeKGphcnBGHUYlWBL'
-# api_secret = 'DUwb9nX8lHMd1SWWIThTzCfJ5Bwz5wImviaAKWe1ZmmVpJhykDp9XFUxYl1AwU6E'
-
-api_key = os.getenv("binance__api_key")
-api_secret = os.getenv("binance__api_secret")
-telegram_bot_token = os.getenv("telegram__bot_token")
-telegram_chat_id = os.getenv("telegram__chat_id")
-
 api_key = config['binance']['api_key']
 api_secret = config['binance']['api_secret']
 
