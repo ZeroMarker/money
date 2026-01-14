@@ -6,7 +6,7 @@ After=network.target
 
 [Service]
 # 工作目錄
-WorkingDirectory=/home/ubuntu/money
+# WorkingDirectory=/home/ubuntu/money
 
 # 環境變數：指定 SOPS 私钥位置
 Environment="SOPS_AGE_KEY_FILE=/etc/age/server.key"
