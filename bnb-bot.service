@@ -30,12 +30,12 @@ StandardOutput=journal
 StandardError=journal
 
 # 限制權限（安全性提升）
-ProtectSystem=strict
-PrivateTmp=true
-NoNewPrivileges=true
-ProtectHome=yes
-ProtectKernelTunables=yes
-ProtectControlGroups=yes
+# ProtectSystem=strict
+# PrivateTmp=true
+# NoNewPrivileges=true
+# ProtectHome=yes
+# ProtectKernelTunables=yes
+# ProtectControlGroups=yes
 
 [Install]
 WantedBy=multi-user.target
