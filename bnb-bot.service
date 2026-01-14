@@ -11,7 +11,7 @@ WorkingDirectory=/home/ubuntu/money
 # 環境變數：指定 SOPS 私钥位置
 Environment="SOPS_AGE_KEY_FILE=/etc/age/server.key"
 
-ExecStart=/usr/local/bin/sops -d /home/ubuntu/money/secrets.yaml | /home/ubuntu/money/bnb/.venv/bin/python3 /home/ubuntu/money/bnb/live.py
+ExecStart=/usr/bin/sh /home/ubuntu/money/start.sh
 
 # 常見選項（根據需求調整）
 Restart=always                # 自動重啟
