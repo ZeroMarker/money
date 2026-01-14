@@ -1,0 +1,38 @@
+[Unit]
+Description=Binance Trade Bot
+After=network.target
+# 如果你的應用依賴其他服務（如資料庫），加在這裡
+# After=postgresql.service docker.service
+
+[Service]
+# 工作目錄（假設你的程式碼在 /app）
+WorkingDirectory=$HOME/money
+
+# 環境變數：指定 SOPS 私钥位置
+Environment="SOPS_AGE_KEY_FILE=/etc/age/server.key"
+
+# 推薦：使用 exec-env 直接注入環境變數運行程式
+# 嵌套鍵會用 __ 分隔，例如 binance__api_key
+ExecStart=/usr/local/bin/sops exec-env $HOME/money/secrets.yaml /usr/bin/python3 $HOME/money/bnb/live.py
+
+# 常見選項（根據需求調整）
+Restart=always                # 自動重啟
+RestartSec=5                  # 重啟間隔
+KillMode=process              # 只殺主進程
+TimeoutStartSec=30            # 啟動超時
+TimeoutStopSec=30             # 停止超時
+
+# 日誌（可選：輸出到 journalctl）
+StandardOutput=journal
+StandardError=journal
+
+# 限制權限（安全性提升）
+ProtectSystem=strict
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+
+[Install]
+WantedBy=multi-user.target
