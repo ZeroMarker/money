@@ -1,6 +1,11 @@
+import binance
 import ccxt
 import pandas as pd
 import os
+import sys
+import yaml
+
+config = yaml.safe_load(sys.stdin)
 
 # ====================================================
 # 配置区域
@@ -12,6 +17,9 @@ api_key = os.getenv("binance__api_key")
 api_secret = os.getenv("binance__api_secret")
 telegram_bot_token = os.getenv("telegram__bot_token")
 telegram_chat_id = os.getenv("telegram__chat_id")
+
+api_key = config['binance']['api_key']
+api_secret = config['binance']['api_secret']
 
 # 初始化交易所 (Binance Testnet)
 exchange = ccxt.binance({
