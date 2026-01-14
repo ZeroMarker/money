@@ -6,14 +6,14 @@ After=network.target
 
 [Service]
 # 工作目錄（假設你的程式碼在 /app）
-WorkingDirectory=$HOME/money
+WorkingDirectory=/home/ubuntu/money
 
 # 環境變數：指定 SOPS 私钥位置
 Environment="SOPS_AGE_KEY_FILE=/etc/age/server.key"
 
 # 推薦：使用 exec-env 直接注入環境變數運行程式
 # 嵌套鍵會用 __ 分隔，例如 binance__api_key
-ExecStart=/usr/local/bin/sops exec-env $HOME/money/secrets.yaml /usr/bin/python3 $HOME/money/bnb/live.py
+ExecStart=/usr/local/bin/sops exec-env /home/ubuntu/money/secrets.yaml /usr/bin/python3 /home/ubuntu/money/bnb/live.py
 
 # 常見選項（根據需求調整）
 Restart=always                # 自動重啟
