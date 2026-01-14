@@ -7,3 +7,5 @@ pm2 status
 # 设置开机自启
 pm2 save
 pm2 startup
+
+pm2 start --name "bnb-bot" .venv/bin/python -- main.py -u

@@ -1,0 +1,4 @@
+creation_rules:
+  - path_regex: \.(yaml|yml|json)$  # 匹配 YAML/JSON 文件
+    encrypted_regex: (?i)(token|id|secret|key|url)$  # 以 token/id/secret/key 结尾，不区分大小写
+    age: age1wpx06am6w2n4zawk32z9j5c9ytsl6p2q6t9sq5q900lp2gxnwgtqmqhevm
